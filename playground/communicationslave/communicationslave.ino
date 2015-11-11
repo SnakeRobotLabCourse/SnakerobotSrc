@@ -4,20 +4,17 @@ String inputString = "";
 boolean inputComplete;
 
 byte buf[3] = {12,10,18};
-byte adrress = 8;
+byte adrress = 9;
 
 void setup() {
   Serial.begin(9600);
   inputString.reserve(200);//reserve 200 bytes fro the inputstring
-  
   Wire.begin(adrress);
   Wire.onRequest(requestEvent);
-  // put your setup code here, to run once:
-
+  Wire.onReceive(receiveEvent);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   delay(100);
 }
 
@@ -27,8 +24,7 @@ void requestEvent(){
   Wire.write(inputString.c_str());//respond with message of 6 bytes as expected by master
   inputComplete = false;
   inputString = "";
-
-}
+} 
 
 void serialEvent(){
   while(Serial.available()){
@@ -39,6 +35,23 @@ void serialEvent(){
         inputComplete = true;
       }
   }
-
- 
 }
+  void receiveEvent(int howMany) {
+  while (1 < Wire.available()) { // loop through all but the last
+    char c = Wire.read(); // receive byte as a character
+    //String resultCharString = "Slave 9 received char " + c;
+    //Serial
+    
+    Serial.print(c);         // print the character
+  }
+  int x = Wire.read();    // receive byte as an integer
+  //String resultIntString = "Slave 9 received int " + x;
+  Serial.println(x);
+  
+  //serialEvent();
+  //Serial.println(inputString.c_str());
+  //Wire.write("blub");//respond with message of 6 bytes as expected by master
+  //inputComplete = false;
+  //inputString = "";
+}
+ 
