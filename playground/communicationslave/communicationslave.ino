@@ -24,7 +24,7 @@ void loop() {
 void requestEvent(){
   Serial.println("Pls input string");
   serialEvent();
-  Wire.write("success");//respond with message of 6 bytes as expected by master
+  Wire.write(inputString.c_str());//respond with message of 6 bytes as expected by master
   inputComplete = false;
   inputString = "";
 
