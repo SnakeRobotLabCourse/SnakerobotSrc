@@ -20,35 +20,55 @@ void loop() {
 
   if(inputComplete){
     byte adressByte = inputString[0];
-    Serial.println("givvenbyte");
+    Serial.print("givenbyte:");
     Serial.println(adressByte);
     
-    inputComplete = false;
-    inputString = "";
     if(adressByte == 56){ //ascii 56 = 8, 57=9
         Serial.println("adress 8");
+         Wire.beginTransmission(8); // transmit to device #44 (0x2c)
+                              // device address is specified in datasheet
+         Wire.write("Hello8");             // sends value byte  
+         Wire.endTransmission();     // stop transmitting
+         delay(10);
        Wire.requestFrom(8,1); 
-       read();
     } else if (adressByte == 57){
         Serial.println("adress 9");
-       Wire.requestFrom(9,1); 
-       read();
-    } else{
+        Wire.beginTransmission(9); // transmit to device #44 (0x2c)
+                 // device address is specified in datasheet
+        Wire.write(inputString.c_str());             // sends value byte  
+        Wire.endTransmission();     // stop transmitting
+        delay(10);//WITHOUT THIS IT FAILS
+        Wire.requestFrom(9, 10);
+     } else{
         Serial.println("no know adress");
     }
+    inputComplete = false;
+    inputString = "";
   }
 
-  delay(3000);
+  
+   read();
+  delay(100);
 }
 
 void read(){
+  boolean first = true;
   while(Wire.available()){//slave may send less then requested
-  //digitalWrite(13, HIGH);    // turn the LED off by making the voltage LOW
     
     byte c = Wire.read();//receive a btye as character
-    Serial.print(c);//print the character
+    if(first){
+      if(c >0){
+        Serial.print("FOUND RESULT: ");
+      } else{
+        Serial.print("NO RESULT");
+      }
+      first = false;
+    }
+    Serial.println(c);//print the character
     
   }
+  
+  Serial.println("after whileloop");
 }
 
 void serialEvent(){
