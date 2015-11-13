@@ -7,10 +7,10 @@ Servo myservo;
 String inputString = "";
 boolean inputComplete;
 int midms = 1534;
-int maxms = 1700;
-int minms = 1200;
+int maxms = 2400;
+int minms = 600;
 byte buf[3] = {12,10,18};
-byte address = 9;
+byte address = 8;
 
 void setup() {
   Serial.begin(9600);
@@ -29,7 +29,7 @@ void loop() {
 //callback which is called, when the slave receives a request from the master 
 //(master requests the current data from the slave, e.g. current servo angle or speed)
 void requestEvent(){
-  Serial.println("Pls input string");
+  Serial.println("Request from master");
   serialEvent();
   Wire.write(inputString.c_str());
   inputComplete = false;
@@ -60,18 +60,18 @@ void receiveEventNew(int howMany)
 { 
   char type;
   type = 'r';
-  char d = 0;
-  char s = 0;
-  int maxs = 127;
+  byte d = 0;
+  byte s = 0;
+  int maxs = 9;
   while (0 < Wire.available())
   { 
     if(type == 'd'){
-      d = char(Wire.read());
+      d = Wire.read();
       Serial.print(d);
       type = 'r';
       }
     else if(type == 's'){
-      s = char(Wire.read());
+      s = Wire.read();
       Serial.print(s);
       type = 'r';
       }
@@ -80,21 +80,20 @@ void receiveEventNew(int howMany)
       Serial.print(type);
       }   
   }
-  Serial.println("wire ended");
   int ms = midms;
-  if(d=='1'){
+  if(d==1){
     Serial.print("direction1");
-    //ms = midms+(maxms-midms)*(s/maxs);//turn servo clockwise
-    ms = 1700;
+    ms =int(midms+(maxms-midms)*(float(s)/float(maxs)));//turn servo counter clockwise
+    //ms = 2000;
     }
-  else if(d=='0'){
+  else if(d==0){
     Serial.println("direction0");
-    //ms = midms-(midms-minms)*(s/maxs);
-    ms=midms;
+    ms=midms; //stop servo
     }
-  else if(d=='2'){
+  else if(d==2){
     Serial.print("direction2");
-    ms = 1200; //turn servo counter clockwise
+    ms = int(midms-(midms-minms)*(float(s)/float(maxs)));
+    //ms = 800; //turn servo clockwise
     }
    Serial.println("ms:");
    Serial.println(ms);
