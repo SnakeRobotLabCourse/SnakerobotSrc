@@ -19,32 +19,19 @@ void loop() {
   serialEvent();
 
   if(inputComplete){
-    byte adressByte = inputString[0];
+    byte commandByte = inputString[0];
+    byte adressByte = inputString[1];
+    byte directionByte = inputString[2];
+    byte speedByte = inputString[3];
     Serial.print("givenbyte:");
     Serial.println(adressByte);
-    
-    if(adressByte == 56){ //ascii 56 = 8, 57=9
-        Serial.println("adress 8");
-         Wire.beginTransmission(8); // transmit to device #44 (0x2c)
-                              // device address is specified in datasheet
-         Wire.write("Hello8");             // sends value byte  
-         Wire.endTransmission();     // stop transmitting
-         delay(10);
-       Wire.requestFrom(8,1); 
-    } else if (adressByte == 48){
-      trasnmitServoCommand(adressByte, 1, 127);
-        //Serial.println("adress 9");
-        //Wire.beginTransmission(9);
-        //for(int i=1; i<inputString.length(); i++){
-          // dont send address
-         //Wire.write(inputString[i]);
-        //}
-        //Wire.endTransmission();     // stop transmitting
-        //delay(10);//WITHOUT THIS IT FAILS
-        //Wire.requestFrom(9, 10);
-     } else{
-        Serial.println("no know adress");
+    if(commandByte == 84){ //84 = 'T'
+      trasnmitServoCommand(adressByte, directionByte, speedByte);
+    } else if(commandByte == 68) { //69='D'
+      requestAngle(adressByte);
     }
+    
+       
     inputComplete = false;
     inputString = "";
   }
@@ -58,31 +45,46 @@ void read(){
   boolean first = true;
   while(Wire.available()){//slave may send less then requested
     
-    byte c = Wire.read();//receive a btye as character
+    char c = char(Wire.read());//receive a btye as character
     if(first){
-      if(c >0){
+      if(c != NULL){
         Serial.print("FOUND RESULT: ");
       } else{
         Serial.print("NO RESULT");
       }
       first = false;
     }
-    Serial.println(c);//print the character
+    if(c != NULL){
+      Serial.print(c);//print the character
+    }
     
+    
+  }
+  if(!first){
+    Serial.println("\nEndOfRequestanswer");
   }
   
 }
 
-void trasnmitServoCommand(byte adress, byte direction, byte speed){
+void requestAngle(byte adress){
   byte slaveindex = adress-48;
   if(slaveindex>=0){
-      Serial.println("slave index");
+    Wire.requestFrom((int)slaves[slaveindex], 4);
+  }
+}
+
+void trasnmitServoCommand(byte adress, byte direction, byte speed){
+  byte slaveindex = adress-48;
+  byte directionValue = direction-48;
+  byte speedValue = speed-48;
+  if(slaveindex>=0){
+     Serial.println("slave index");
      Serial.println(slaveindex);
      Wire.beginTransmission(slaves[slaveindex]);
      Wire.write('d'); //send 'd' as byte
-     Wire.write(direction); //direction 0 = stop, 1 = clockwise, 2 = counterclockwise
+     Wire.write(directionValue); //direction 0 = stop, 1 = counterclockwise, 2 = clockwise
      Wire.write('s'); //send 'd' as byte
-     Wire.write(speed);
+     Wire.write(speedValue);
      Wire.endTransmission();     // stop transmitting
      delay(10);
   } else{
