@@ -1,11 +1,14 @@
 #include<Wire.h>
-
+#include<Servo.h>
 //Status: Slave can receive (1 byte at the moment) and send data from/to master
 //Next Steps: parse the received data and control the servo which is connected to the slave
 
+Servo myservo;
 String inputString = "";
 boolean inputComplete;
-
+int midms = 1534;
+int maxms = 1700;
+int minms = 1200;
 byte buf[3] = {12,10,18};
 byte address = 9;
 
@@ -14,7 +17,9 @@ void setup() {
   inputString.reserve(200);       //reserve 200 bytes fro the inputstring
   Wire.begin(address);
   Wire.onRequest(requestEvent);   //register the handler for a request event  (Master: Wire.requestFrom(...))
-  Wire.onReceive(receiveEvent);   //register the handler for a receive event  (Master: Wire.write(...))
+  Wire.onReceive(receiveEventNew);   //register the handler for a receive event  (Master: Wire.write(...))
+  myservo.attach(9);
+  myservo.writeMicroseconds(midms);
 }
 
 void loop() {
@@ -51,3 +56,47 @@ void serialEvent(){
   int x = Wire.read();            // receive byte as an integer
   Serial.println(x);
  }
+void receiveEventNew(int howMany)
+{ 
+  char type;
+  type = 'r';
+  char d = 0;
+  char s = 0;
+  int maxs = 127;
+  while (0 < Wire.available())
+  { 
+    if(type == 'd'){
+      d = char(Wire.read());
+      Serial.print(d);
+      type = 'r';
+      }
+    else if(type == 's'){
+      s = char(Wire.read());
+      Serial.print(s);
+      type = 'r';
+      }
+    else{
+      type = char(Wire.read());
+      Serial.print(type);
+      }   
+  }
+  Serial.println("wire ended");
+  int ms = midms;
+  if(d=='1'){
+    Serial.print("direction1");
+    //ms = midms+(maxms-midms)*(s/maxs);//turn servo clockwise
+    ms = 1700;
+    }
+  else if(d=='0'){
+    Serial.println("direction0");
+    //ms = midms-(midms-minms)*(s/maxs);
+    ms=midms;
+    }
+  else if(d=='2'){
+    Serial.print("direction2");
+    ms = 1200; //turn servo counter clockwise
+    }
+   Serial.println("ms:");
+   Serial.println(ms);
+   myservo.writeMicroseconds(ms);
+}
