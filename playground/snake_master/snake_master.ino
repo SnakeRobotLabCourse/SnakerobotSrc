@@ -12,7 +12,6 @@
 #include <Wire.h>
 #define MAX_INPUT_SIZE 30
 
-String inputString="";
 char input[MAX_INPUT_SIZE+1]; // creating a char array and not creating a 'String' object
 
 void setup() {
