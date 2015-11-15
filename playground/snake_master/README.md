@@ -10,4 +10,4 @@ parsed at the slaves and executed
 Output: The addressed slaves respond with ACKs
 
 The code doesn't use the 'String' libraray and instead uses standard C functions and char arrays
-on purpose to minimize dynamic memory usage and increase speed
+on purpose to minimize dynamic memory usage and increase speed 
