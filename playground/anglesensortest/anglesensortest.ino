@@ -9,7 +9,6 @@
 
 //#include <Metro.h> //Include Metro library
 
-
 Servo myservo;
 int pinSS = 7;
 int pinSCK = 10;

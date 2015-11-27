@@ -10,8 +10,8 @@ while(t<interval)
     b = str2num(fgetl(s)); 
     x = [x,b];% use fgets(s) to read data from the buffer unitl the stop character, so we need to use function  Serial.println() in the Arduino program          
 
-    plot(t,x);
-    grid
+    %plot(t,x);
+    %grid
     t = t+passo;
     drawnow;
 end

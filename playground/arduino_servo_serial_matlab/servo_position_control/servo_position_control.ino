@@ -25,13 +25,14 @@ void setup()
 {
   myservo.attach(9);
   Serial.begin(115200);
+  //Serial.begin(9600);
   mlx_1.attach(pinSS,pinSCK, pinMOSI); 
   //Serial.println(" MLX90316 Rotary Position Sensor");
   delay(2000);
   ii = mlx_1.readAngle();
-  while((ii>=ini_angle + 5 ) || (ii <= ini_angle - 5))
+  while((ii>=ini_angle + 2) || (ii <= ini_angle - 2))
   {
-  error=-1*(pos-ii);
+    error=-1*(pos-ii);
     order=map(error,-3600,3600,-600,600)+1534;
     ii = mlx_1.readAngle();
     delay(10);
@@ -39,7 +40,7 @@ void setup()
 }
 
 void loop() 
-{       
+{   
     unsigned long currentMillis = millis();                    //current time
     previousMillis=currentMillis;
     ii = mlx_1.readAngle(); //First step: to read the real angle position
