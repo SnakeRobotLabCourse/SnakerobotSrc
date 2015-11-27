@@ -22,16 +22,16 @@ int curDiffLeft;
 
 int midms = 1533; //stop servo
 
-#define MAXMS3 = 2400;  //turnservo fast from 360 to 0
-#define MINMS3 = 600;   //turnservo fast from 0 to 360
-#define MAXMS2 = 1590;//turnservo slow from 360 to 0
-#define MINMS2 = 1476;//turnservo slow from 0 to 360
-#define MAXMS1 = 1553;//turnservo very slow from 360 to 0
-#define MINMS1 = 1513;//turnservo very slow from 0 to 360
+#define MAXMS3 2400  //turnservo fast from 360 to 0
+#define MINMS3 600   //turnservo fast from 0 to 360
+#define MAXMS2 1590//turnservo slow from 360 to 0
+#define MINMS2 1476//turnservo slow from 0 to 360
+#define MAXMS1 1553//turnservo very slow from 360 to 0
+#define MINMS1 1513//turnservo very slow from 0 to 360
 
-#define ACCURRACY3 = 600; // -> bigger angle distance then this will turn fast
-#define ACCURRACY2 = 300; // -> bigger angle distance then this will turn slow
-#define ACCURRACY1 = 10;  // -> bigger angle distance then this will turn very slow
+#define ACCURRACY3 600 // -> bigger angle distance then this will turn fast
+#define ACCURRACY2 300 // -> bigger angle distance then this will turn slow
+#define ACCURRACY1 10  // -> bigger angle distance then this will turn very slow
 
 
 int targetAngle = 800;

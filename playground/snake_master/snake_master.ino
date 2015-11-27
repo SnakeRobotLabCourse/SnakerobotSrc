@@ -1,13 +1,41 @@
 #include <Wire.h>
 #define MAX_INPUT_SIZE 30
+#define MAX_NUMBER_SLAVES 30
 
 char input[MAX_INPUT_SIZE+1]; // creating a char array and not creating a 'String' object
+byte slaves[MAX_NUMBER_SLAVES+1];
+
 
 void setup() {
   // put your setup code here, to run once:
   Wire.begin(); //join i2c bus, no address as I'm master
   Serial.begin(9600);  //start serial for giving input
   //inputString.reserve(200); //reserve 200 bytes for inputString
+
+Serial.println ("I2C scanner. Scanning ...");
+ byte count = 0;
+ 
+ Wire.begin();
+ for (byte i = 1; i < 120; i++)
+ {
+   Wire.beginTransmission (i);
+   if (Wire.endTransmission () == 0)
+     {
+     Serial.print ("Found address: ");
+     Serial.print (i, DEC);
+     Serial.print (" (0x");
+     Serial.print (i, HEX);
+     Serial.println (")");
+     slaves[count] = i;
+     count++;
+     } // end of good response
+    delay (5);  // give devices time to recover
+ } // end of for loop
+ Serial.println ("Done.");
+ Serial.print ("Found ");
+ Serial.print (count, DEC);
+ Serial.println (" device(s).");
+  
 }
 
 void loop() {
