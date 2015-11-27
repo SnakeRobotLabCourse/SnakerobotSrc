@@ -17,9 +17,15 @@ void loop() {
 }
 
 void readFromSlaves() {
-  while(Wire.available()){
-    byte c=Wire.read(); //receive a byte as character
-    Serial.print(c);
+  //READ angle value from slave with adress 8
+  Wire.requestFrom(8, 2);     // request 2 bytes from slave device #2
+
+   while(Wire.available())    // slave may send less than requested
+  { 
+     int x = Wire.read();         
+     int y = Wire.read();         
+     int z = y * 256 + x;    
+Serial.println(z);
   }
 }
 
