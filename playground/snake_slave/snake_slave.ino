@@ -6,6 +6,7 @@
 #include <MLX90316.h>
 #include<Servo.h>
 #define INPUT_SIZE 2
+#define SLAVEADRESS 8
 bool address_set=false;
 char input[INPUT_SIZE+1];
 int time_to_set_angle=-99;
@@ -21,20 +22,22 @@ int curDiffLeft;
 
 int midms = 1533; //stop servo
 
-int maxms3 = 2400;  //turnservo fast from 360 to 0
-int minms3 = 600;   //turnservo fast from 0 to 360
-int maxms2 = 1590;//turnservo slow from 360 to 0
-int minms2 = 1476;//turnservo slow from 0 to 360
-int maxms1 = 1553;//turnservo very slow from 360 to 0
-int minms1 = 1513;//turnservo very slow from 0 to 360
+#define MAXMS3 = 2400;  //turnservo fast from 360 to 0
+#define MINMS3 = 600;   //turnservo fast from 0 to 360
+#define MAXMS2 = 1590;//turnservo slow from 360 to 0
+#define MINMS2 = 1476;//turnservo slow from 0 to 360
+#define MAXMS1 = 1553;//turnservo very slow from 360 to 0
+#define MINMS1 = 1513;//turnservo very slow from 0 to 360
+
+#define ACCURRACY3 = 600; // -> bigger angle distance then this will turn fast
+#define ACCURRACY2 = 300; // -> bigger angle distance then this will turn slow
+#define ACCURRACY1 = 10;  // -> bigger angle distance then this will turn very slow
+
 
 int targetAngle = 800;
 int tempTargetAngle;
 int duration = 500;
 
-int accurracy3 = 600; // -> bigger angle distance then this will turn fast
-int accurracy2 = 300; // -> bigger angle distance then this will turn slow
-int accurracy1 = 10;  // -> bigger angle distance then this will turn very slow
 
 int minAngle = 0; //use when calibrating later
 int maxAngle = 0; //use when calibrating later
@@ -57,25 +60,13 @@ void setup() {
 
   myservo.attach(9);
   myservo.writeMicroseconds(midms);
+
+  Wire.begin(SLAVEADRESS);
+  Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
 }
 
 void loop() {
-  if(!address_set) {
-    while(Serial.available()) {
-      byte input_size = Serial.readBytes(input, INPUT_SIZE);
-      input[input_size]=0;
-      int myAddress = atoi(input);
-      Wire.begin(myAddress);
-      address_set=true;
-      Serial.print("Address assigned to this slave is ");Serial.println(myAddress);
-      delay(500);
-      //parseMessage(); // put this here just to demonstrate the function
-      //Serial.end();
-      break;
-    }
-    Wire.onReceive(receiveEvent);
-    Wire.onRequest(requestEvent);
-  }
   updateAngle();
   delay(100);
 }
@@ -95,23 +86,23 @@ void updateAngle(){
     curDiffRight = targetAngle -iiX;   //messure distance when turning away from targetangle going over 0
   } 
   if(curDiffRight > curDiffLeft){
-    if(curDiffLeft > accurracy3){
-      myservo.writeMicroseconds(maxms3);
-    } else if(curDiffLeft > accurracy2){
-      myservo.writeMicroseconds(maxms2);
-    } else if(curDiffLeft > accurracy1){
-      myservo.writeMicroseconds(maxms1);
+    if(curDiffLeft > ACCURRACY3){
+      myservo.writeMicroseconds(MAXMS3);
+    } else if(curDiffLeft > ACCURRACY2){
+      myservo.writeMicroseconds(MAXMS2);
+    } else if(curDiffLeft > ACCURRACY1){
+      myservo.writeMicroseconds(MAXMS1);
     } else{
        myservo.writeMicroseconds(midms);
     }
     
   } else {//if(curDiffLeft >= curDiffRight){
-    if(curDiffRight > accurracy3){
-      myservo.writeMicroseconds(minms3);
-    } else if(curDiffRight > accurracy2){
-      myservo.writeMicroseconds(minms2);
-    } else if(curDiffRight > accurracy1){
-      myservo.writeMicroseconds(minms1);
+    if(curDiffRight > ACCURRACY3){
+      myservo.writeMicroseconds(MINMS3);
+    } else if(curDiffRight > ACCURRACY2){
+      myservo.writeMicroseconds(MINMS2);
+    } else if(curDiffRight > ACCURRACY1){
+      myservo.writeMicroseconds(MINMS1);
     } else{
        myservo.writeMicroseconds(midms);
     }
@@ -169,17 +160,8 @@ void parseMessage(char* message) {
 //this function is registered as an event, see setup()
 void requestEvent() {
   Serial.println("RequestEvent");
-  sendInt(ii);
-  //char b[4];   //declaring character array
-  //String str;  //declaring string
- 
-  //str=String(ii); //converting integer into a string
-  //str.toCharArray(b,4); //passing the value of the string to the character array
-  //Serial.println(str);
-  //Serial.println(ii);
-  //for(int i = 0; i<4; i++){
-  //   Wire.write(b[i]); 
-  //}
+  //sendInt(ii);
+  sendInt(3600);
   //respond with message containing angle as expected by master
 }
 

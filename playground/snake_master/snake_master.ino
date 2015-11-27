@@ -12,21 +12,23 @@ void setup() {
 
 void loop() {
   serialEvent(); //gets input message from the serial port
-  readFromSlaves(); // reads everything from the Wire.read
   delay(500);
 }
 
-void readFromSlaves() {
+void readFromSlave(int slaveId) {
   //READ angle value from slave with adress 8
-  Wire.requestFrom(8, 2);     // request 2 bytes from slave device #2
+  
+  //Requesting a angle value from a slave takes about 700µs
+  Wire.requestFrom(slaveId, 2);     // request 2 bytes from slave device #2
 
    while(Wire.available())    // slave may send less than requested
   { 
      int x = Wire.read();         
      int y = Wire.read();         
      int z = y * 256 + x;    
-Serial.println(z);
+     Serial.println(z);
   }
+  
 }
 
 void serialEvent() {
@@ -47,12 +49,20 @@ void serialEvent() {
         Serial.print("slaveId-");Serial.println(slaveId);
         ++message;
         Serial.print("message-");Serial.println(message);
-        
-        // sending the messages here
-        Wire.beginTransmission(slaveId);
-        Wire.write(message);
-        Wire.endTransmission();
-        delay(10);
+
+        char* token=strtok(message, ":");
+        char command=*token;
+        Serial.print("Command Char-");Serial.println(command);
+  
+        if(command=='G') { // don't need to read anymore as it's just a get command from master and no more input is expected in this message
+          readFromSlave(slaveId);
+        } else{
+          // sending the messages here
+          Wire.beginTransmission(slaveId);
+          Wire.write(message);
+          Wire.endTransmission();
+          delay(10);
+        }
       }
       // Find the next command in input string
       command = strtok(0, "&");
