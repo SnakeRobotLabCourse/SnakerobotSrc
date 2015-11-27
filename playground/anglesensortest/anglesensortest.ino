@@ -29,6 +29,8 @@ int maxms1 = 1553;//turnservo very slow from 360 to 0
 int minms1 = 1513;//turnservo very slow from 0 to 360
 
 int targetAngle = 2700;
+int tempTargetAngle;
+int duration = 500;
 
 int accurracy3 = 600; // -> bigger angle distance then this will turn fast
 int accurracy2 = 300; // -> bigger angle distance then this will turn slow
@@ -37,7 +39,6 @@ int accurracy1 = 10;  // -> bigger angle distance then this will turn very slow
 int minAngle = 0; //use when calibrating later
 int maxAngle = 0; //use when calibrating later
 
-//Metro mlxMetro = Metro(5); 
 MLX90316 mlx_1  = MLX90316(); 
 
 void setup(){
