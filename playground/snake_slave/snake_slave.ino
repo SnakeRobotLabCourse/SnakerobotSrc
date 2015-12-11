@@ -38,9 +38,12 @@ int targetAngle = 800;
 int tempTargetAngle;
 int duration = 500;
 
-
-int minAngle = 0; //use when calibrating later
-int maxAngle = 0; //use when calibrating later
+int calibratingDif;
+int minAngle = 9000; //use when calibrating later
+int maxAngle = 9000; //use when calibrating later
+boolean calibratingMin = false;
+boolean calibrating = false;
+boolean calibratingFinished = false;
 
 int byteSending = 1;
 int toTransfer = 32766;
@@ -67,8 +70,44 @@ void setup() {
 }
 
 void loop() {
-  updateAngle();
+  if(calibrating && !calibratingFinished){
+    calibrate();
+  } else{
+    updateAngle();
+  }
   delay(100);
+}
+
+void calibrate(){
+  ii = mlx_1.readAngle();
+  if(calibratingMin){//calibrate on of the sides
+    if(minAngle > ii){
+      calibratingDiff = minAngle -ii;
+    } else{
+       calibratingDiff = ii -minAngle;
+    }
+    minAngle = ii;
+    if(calibratingDiff < 1){//if difference to last value is smalle then 1 degree, we assume we found the value
+      calibratingMin = false;//continue with the other
+      myservo.writeMicroseconds(midms);//stop servo
+    } else{
+      myservo.writeMicroseconds(MINMS2);//keep turning
+    }
+  } else{//calibrate the other of the sides
+    if(maxAngle > ii){
+      calibratingDiff = maxAngle -ii;
+    } else{
+       calibratingDiff = ii -maxAngle;
+    }
+    maxAngle = ii;//remember last read value
+    if(calibratingDiff < 1){//if difference to last value is smalle then 1 degree, we assume we found the value
+      calibratingMin = true;
+      calibratingFinished = true;//we are done calibrating
+      myservo.writeMicroseconds(midms);//stop servo
+    } else{
+      myservo.writeMicroseconds(MAXMS2);//keep turning
+    }
+  }
 }
 
 void updateAngle(){
@@ -133,6 +172,9 @@ void parseMessage(char* message) {
   // if command is 'S'
   if(command=='G') { // don't need to read anymore as it's just a get command from master and no more input is expected in this message
     //requestEvent();
+  } else if(command=='C'){
+    startCalibrating();
+    Serial.println("Starting calibration");
   }
   else {
     int i=0;
@@ -155,14 +197,26 @@ void parseMessage(char* message) {
   }
 }
 
+//function to begin calibrating the angle sensor
+//while calibrating no other commands can be processed
+void startCalibrating(){
+  calibrating = true;
+  minAngle = 9000;
+  maxAngle = 9000;
+}
 
 //function that executes whenever data is requested by master 
 //this function is registered as an event, see setup()
 void requestEvent() {
   Serial.println("RequestEvent");
-  //sendInt(ii);
-  sendInt(3600);
-  //respond with message containing angle as expected by master
+  if(calibrating){
+    sendInt(1800);
+    calibrating = false;
+  } else{
+    //respond with message containing angle as expected by master
+    //sendInt(ii);
+    sendInt(3600);
+  }
 }
 
 void sendInt(int num){
