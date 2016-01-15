@@ -70,19 +70,24 @@ void readFromSlave(int slaveId, boolean calibrating) {
        int x = Wire.read();         
        int y = Wire.read();         
        int z = y * 256 + x;    
-       Serial.println(z);
+       Serial.println(z);//0-3600
     }
   }
 }
 
+void rosCallback(String receivedMsg){
+  
+}
+
 void serialEvent() {
-  while(Serial.available()) {
+  while(Serial.available()) {//if there is input do something
     byte input_size = Serial.readBytes(input, MAX_INPUT_SIZE);
     Serial.print("input_size: ");Serial.println(input_size);
     input[input_size]=0;
     Serial.print(input);
     // Read each command
     char* command = strtok(input, "&");
+    // 8:S:3600
     while (command != 0) {
       // Split the command into two values
       char* message = strchr(command, ':');

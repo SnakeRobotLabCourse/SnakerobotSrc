@@ -6,7 +6,7 @@
 #include <MLX90316.h>
 #include<Servo.h>
 #define INPUT_SIZE 2
-#define SLAVEADRESS 8
+#define SLAVEADRESS 9
 bool address_set=false;
 char input[INPUT_SIZE+1];
 int time_to_set_angle=-99;
@@ -20,30 +20,31 @@ int iiX;
 int curDiffRight;
 int curDiffLeft;
 
-int midms = 1533; //stop servo
+int midms = 1518; //stop servo
 
 #define MAXMS3 2400  //turnservo fast from 360 to 0
 #define MINMS3 600   //turnservo fast from 0 to 360
 #define MAXMS2 1590//turnservo slow from 360 to 0
 #define MINMS2 1476//turnservo slow from 0 to 360
-#define MAXMS1 1553//turnservo very slow from 360 to 0
-#define MINMS1 1513//turnservo very slow from 0 to 360
+#define MAXMS1 1556//turnservo very slow from 360 to 0
+#define MINMS1 1495//turnservo very slow from 0 to 360
 
 #define ACCURRACY3 600 // -> bigger angle distance then this will turn fast
 #define ACCURRACY2 300 // -> bigger angle distance then this will turn slow
-#define ACCURRACY1 10  // -> bigger angle distance then this will turn very slow
+#define ACCURRACY1 30  // -> bigger angle distance then this will turn very slow
 
 
 int targetAngle = 800;
 int tempTargetAngle;
 int duration = 500;
 
-int calibratingDif;
+int calibratingDiff;
 int minAngle = 9000; //use when calibrating later
 int maxAngle = 9000; //use when calibrating later
-boolean calibratingMin = false;
+boolean calibratingMax = true;
 boolean calibrating = false;
 boolean calibratingFinished = false;
+boolean calibratingDiffOnceBigger = false;
 
 int byteSending = 1;
 int toTransfer = 32766;
@@ -51,14 +52,14 @@ int Shift = toTransfer;
 int mask = 0xFF;
 char toSend = 0;
 
+boolean lastMessage = false;
 
 MLX90316 mlx_1  = MLX90316(); 
 
 
 void setup() {
   Serial.begin(9600);  // start serial for giving input
-  Serial.println("Please enter the address you want to set for this slave");
-
+  
   mlx_1.attach(pinSS,pinSCK, pinMOSI ); 
 
   myservo.attach(9);
@@ -67,6 +68,7 @@ void setup() {
   Wire.begin(SLAVEADRESS);
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
+  startCalibrating();
 }
 
 void loop() {
@@ -80,30 +82,37 @@ void loop() {
 
 void calibrate(){
   ii = mlx_1.readAngle();
-  if(calibratingMin){//calibrate on of the sides
-    if(minAngle > ii){
-      calibratingDiff = minAngle -ii;
-    } else{
-       calibratingDiff = ii -minAngle;
-    }
-    minAngle = ii;
-    if(calibratingDiff < 1){//if difference to last value is smalle then 1 degree, we assume we found the value
-      calibratingMin = false;//continue with the other
-      myservo.writeMicroseconds(midms);//stop servo
-    } else{
-      myservo.writeMicroseconds(MINMS2);//keep turning
-    }
-  } else{//calibrate the other of the sides
+  if(calibratingMax){//calibrate on of the sides
     if(maxAngle > ii){
       calibratingDiff = maxAngle -ii;
     } else{
        calibratingDiff = ii -maxAngle;
     }
-    maxAngle = ii;//remember last read value
+    maxAngle = ii;
     if(calibratingDiff < 1){//if difference to last value is smalle then 1 degree, we assume we found the value
-      calibratingMin = true;
+      calibratingMax = false;//continue with the other
+      myservo.writeMicroseconds(MAXMS2);//switch direction servo
+      ii= -1;
+    } else{
+      myservo.writeMicroseconds(MINMS2);//keep turning
+    }
+  } else{//calibrate the other of the sides
+    if(minAngle > ii){
+      calibratingDiff = minAngle -ii;
+    } else{
+      calibratingDiff = ii -minAngle;
+    }
+      minAngle = ii;
+    
+    //remember last read value
+    if(calibratingDiff < 1){//if difference to last value is smalle then 1 degree, we assume we found the value
+      calibratingMax = true;
       calibratingFinished = true;//we are done calibrating
       myservo.writeMicroseconds(midms);//stop servo
+      Serial.print("minangle =");
+      Serial.println(minAngle);
+      Serial.print("maxangle =");
+      Serial.println(maxAngle);
     } else{
       myservo.writeMicroseconds(MAXMS2);//keep turning
     }
@@ -165,6 +174,8 @@ void receiveEvent(int howMany) {
  }
 
 void parseMessage(char* message) {
+  lastMessage = message;
+  Serial.println(message);
   // read each part of the message
   char* token=strtok(message, ":");
   char command=*token;
