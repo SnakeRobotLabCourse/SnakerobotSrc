@@ -34,7 +34,7 @@ int midms = 1518; //stop servo
 #define ACCURRACY1 30  // -> bigger angle distance then this will turn very slow
 
 
-int targetAngle = 800;
+int targetAngle = 10;
 int tempTargetAngle;
 int duration = 500;
 
@@ -68,7 +68,6 @@ void setup() {
   Wire.begin(SLAVEADRESS);
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
-  startCalibrating();
 }
 
 void loop() {
@@ -174,7 +173,6 @@ void receiveEvent(int howMany) {
  }
 
 void parseMessage(char* message) {
-  lastMessage = message;
   Serial.println(message);
   // read each part of the message
   char* token=strtok(message, ":");
@@ -225,8 +223,7 @@ void requestEvent() {
     calibrating = false;
   } else{
     //respond with message containing angle as expected by master
-    //sendInt(ii);
-    sendInt(3600);
+    sendInt(ii);
   }
 }
 
