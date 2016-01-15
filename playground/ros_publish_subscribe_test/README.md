@@ -7,28 +7,27 @@ HINT:
 you have to source each commandline in order to resolve the ros dependencies correctly. Adjust your `~/.bashrc` file to source automatically
 
 ### Prerequisites:
-1 ROS environment setup (ubuntu 15.04 with ros jade installed)
-2 ROS dependencies correctly sourced (if you installed ROS with `apt-get install ..` you can do it with `source /opt/ros/jade/setup.bash`)
+1. ROS environment setup (ubuntu 15.04 with ros jade installed)
+2. ROS dependencies correctly sourced (if you installed ROS with `apt-get install ..` you can do it with `source /opt/ros/jade/setup.bash`)
 
-****
 ### Send messages from PC (publisher) to the Arduino (subscriber):
-1 start the ros master:
+1. start the ros master:
 `$ roscore`
 
-2 upload the ros_publish_subscribe_test programm to your connected arduino
+2. upload the ros_publish_subscribe_test programm to your connected arduino
 
-3 set up the message forwarding (start the forwarding ros node from command line):
+3. set up the message forwarding (start the forwarding ros node from command line):
 `$ rosrun rosserial_python serial_node.py /dev/<usbport_of_the_connected_arduino>`	(port could be ttyUSB0)
 
-4 start publishing topics (data) from your PC:
+4. start publishing topics (data) from your PC:
 `$ rostopic pub /snake_command std_msgs/String "data: 'blub'"`
 
-5 blub should be displayed by the serial_node.py (for forwarding the ros message)
+5. blub should be displayed by the serial_node.py (for forwarding the ros message)
 
 ### Send messages from the Arduino (publisher) to PC (subscriber):
 1, 2, 3 and 4 like in send from PC to arduino
 
-5 start a subscriber from command line:
+5. start a subscriber from command line:
 `$ rostopic echo /snake_status`
 It should show "moving" every 0.5s
 
