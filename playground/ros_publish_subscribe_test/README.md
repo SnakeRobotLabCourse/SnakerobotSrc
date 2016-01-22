@@ -31,10 +31,9 @@ you have to source each commandline in order to resolve the ros dependencies cor
 `$ rostopic echo /snake_status`
 It should show "moving" every 0.5s
 
-If everything runs correctly it should look like in the attached screenshot
-
 ### Problems:
 
 the first time I start the application, everything works fine. When I stop the forwarder node (serial_node.py) and try to start it again, it does not connect to the serial port of the arduino (no matter what I do..).
 
 15.01. update: it worked twice directly after each other, but crashed afterwards. No idea why..
+22.01. solved: the serial_node.py can be restarted, if we reload the code from the Arduino IDE (we also installed another version of the Arduino IDE '1:1.0.5 dsfg 2-4' from the ubuntu software center) and restart the serial_node.py afterwards :-D
