@@ -99,7 +99,9 @@ void serialEvent() {
         ++message;
         Serial.print("message-");Serial.println(message);
 
-        char* token=strtok(message, ":");
+        char * messageValue = message + 2;  //store the value here (set the pointer to the char in the array where the value starts)
+        char * token=strtok(message, ":");
+        
         char command=*token;
         Serial.print("Command Char-");Serial.println(command);
   
@@ -113,12 +115,17 @@ void serialEvent() {
           Wire.endTransmission();
           delay(10);
           readFromSlave(slaveId, true);
-        }else{
+        }else if (command=='S'){
           // sending the messages here
           Wire.beginTransmission(slaveId);
-          Wire.write(message);
+          Wire.write(command);
+          Wire.write(":");
+          Wire.write(messageValue);
           Wire.endTransmission();
           delay(10);
+        }
+        else {
+          //unsupporte
         }
       }
       // Find the next command in input string
