@@ -1,3 +1,6 @@
+#include <ros.h>
+#include <std_msgs/String.h>
+
 #include <Wire.h>
 #define MAX_INPUT_SIZE 30
 #define MAX_NUMBER_SLAVES 30
@@ -5,13 +8,27 @@
 char input[MAX_INPUT_SIZE+1]; // creating a char array and not creating a 'String' object
 byte slaves[MAX_NUMBER_SLAVES+1];
 
+//Definition of ROS variables
+ros::NodeHandle  nh;
+std_msgs::String str_msg;
+ros::Publisher statusPublisher("snake_status", &str_msg);
+
+void messageCb( const std_msgs::String& cmd);
+ros::Subscriber<std_msgs::String> commandSubscriber("snake_command", messageCb );
+
+//TODO remove the serial output, as serial port is blocked by ros message forwarding (check if its blocked!)
+
 void setup() {
-  // put your setup code here, to run once:
+  
   Wire.begin(); //join i2c bus, no address as I'm master
-  Serial.begin(9600);  //start serial for giving input
+  //Serial.begin(9600);  //start serial for giving input
   //inputString.reserve(200); //reserve 200 bytes for inputString
 
-Serial.println ("I2C scanner. Scanning ...");
+  nh.initNode();
+  nh.advertise(statusPublisher);
+  nh.subscribe(commandSubscriber);
+  
+//Serial.println ("I2C scanner. Scanning ...");
  byte count = 0;
  
  Wire.begin();
@@ -30,15 +47,18 @@ Serial.println ("I2C scanner. Scanning ...");
      } // end of good response
     delay (5);  // give devices time to recover
  } // end of for loop
- Serial.println ("Done.");
- Serial.print ("Found ");
- Serial.print (count, DEC);
- Serial.println (" device(s).");
+ //Serial.println ("Done.");
+ //Serial.print ("Found ");
+ //Serial.print (count, DEC);
+ //Serial.println (" device(s).");
   
 }
 
 void loop() {
-  serialEvent(); //gets input message from the serial port
+//  serialEvent(); //gets input message from the serial port
+//will scan the queue for subscribed messages - if the subscriber received a new message, the subscribers callback function will be called
+  nh.spinOnce();
+
   delay(500);
 }
 
@@ -75,17 +95,20 @@ void readFromSlave(int slaveId, boolean calibrating) {
   }
 }
 
-void rosCallback(String receivedMsg){
-  
-}
+//subscriber callback which will be called when the value of topic snake_command changes
+void messageCb( const std_msgs::String& cmd){
 
-void serialEvent() {
-  while(Serial.available()) {//if there is input do something
-    byte input_size = Serial.readBytes(input, MAX_INPUT_SIZE);
-    Serial.print("input_size: ");Serial.println(input_size);
-    input[input_size]=0;
-    Serial.print(input);
-    // Read each command
+//store the received message
+char* input = const_cast<char*>(cmd.data);
+//ros logging (prints cstring to console)
+///nh.loginfo("intput string = %s", input);
+
+//only for debugging: send message back to pc
+str_msg.data = input;
+statusPublisher.publish( &str_msg ); 
+
+  //while(Serial.available()) {//if there is input do something
+
     char* command = strtok(input, "&");
     // 8:S:3600
     while (command != 0) {
@@ -95,15 +118,16 @@ void serialEvent() {
         // Actually split the string in 2: replace ':' with 0
         *message = 0;
         int slaveId = atoi(command);
-        Serial.print("slaveId-");Serial.println(slaveId);
+        //TODO replace serial with ros publisher
+//        Serial.print("slaveId-");Serial.println(slaveId);
         ++message;
-        Serial.print("message-");Serial.println(message);
+//        Serial.print("message-");Serial.println(message);
 
         char * messageValue = message + 2;  //store the value here (set the pointer to the char in the array where the value starts)
         char * token=strtok(message, ":");
         
         char command=*token;
-        Serial.print("Command Char-");Serial.println(command);
+//        Serial.print("Command Char-");Serial.println(command);
   
         if(command=='G') { // don't need to read anymore as it's just a get
           //command from master and no more input is expected in this message
@@ -127,9 +151,9 @@ void serialEvent() {
         else {
           //unsupporte
         }
-      }
+      //} //end while loop
       // Find the next command in input string
-      command = strtok(0, "&");
+  //    command = strtok(0, "&");  //nobody knows...
     }
   }
 }
