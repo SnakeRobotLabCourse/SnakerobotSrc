@@ -20,7 +20,8 @@ int iiX;
 int curDiffRight;
 int curDiffLeft;
 
-#define MIDMS 1543 //stop servo1543 1521
+#define MIDMS 1536 //stop servo1543 1521
+#define CENTERANGLE 1800 //find for each module
 //1534
 
 #define MAXMS3 (MIDMS+100) //turnservo fast from 360 to 0
@@ -35,7 +36,7 @@ int curDiffLeft;
 #define ACCURRACY1 30  // -> bigger angle distance then this will turn very slow
 
 
-int targetAngle = 2300;
+int targetAngle = 1800;
 int tempTargetAngle;
 int duration = 500;
 
@@ -64,17 +65,16 @@ void setup() {
   mlx_1.attach(pinSS,pinSCK, pinMOSI ); 
 
   myservo.attach(9);
-  // myservo.writeMicroseconds(MIDMS);   
 // I suggest delete this line, because it is possible that we forgot to change the stop point when this program is 
 // uploaded to another module having different stop point.
   Wire.begin(SLAVEADRESS);
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
-  startCalibrating();
+  myservo.writeMicroseconds(MIDMS);
+
 }
 
 void loop() {
-   updateAngle();
    //if(targetAngle > 2700 || targetAngle < 900){
    // some module may cannot reach 2700 or 900, for example 800 to 2600 or 1000 to 2800. 
    // To fix this problem, I suggest we first find the initial angle of the module, 
@@ -87,7 +87,9 @@ void loop() {
   } else{
     updateAngle();
   }
-   if(targetAngle > 2600 || targetAngle < 1000){
+  
+
+   if(targetAngle > CENTERANGLE+850 || targetAngle < CENTERANGLE-850){
     Serial.println("writing stopX");
      myservo.writeMicroseconds(MIDMS);
      return;
@@ -107,8 +109,7 @@ void updateAngle(){
      myservo.writeMicroseconds(MIDMS);
      return;
    }
- // if(targetAngle > 2700 || targetAngle < 900){
- if(targetAngle > 2600 || targetAngle < 1000){
+ if(targetAngle > CENTERANGLE+850 || targetAngle < CENTERANGLE-850){
     Serial.println("stopping servo");
      myservo.writeMicroseconds(MIDMS);
      return;
@@ -129,32 +130,24 @@ void updateAngle(){
   } 
   if(curDiffRight > curDiffLeft){
     if(curDiffLeft > ACCURRACY3){
-      Serial.println("min1");
       myservo.writeMicroseconds(MAXMS3);
     } else if(curDiffLeft > ACCURRACY2){
-      Serial.println("min2");
       myservo.writeMicroseconds(MAXMS2);
     } else if(curDiffLeft > ACCURRACY1){
-      Serial.println("min3");
       myservo.writeMicroseconds(MAXMS1);
     } else{
       
-  Serial.println("writing stop1");
        myservo.writeMicroseconds(MIDMS);
     }
     
   } else {//if(curDiffLeft >= curDiffRight){
     if(curDiffRight > ACCURRACY3){
-       Serial.println("max1");
       myservo.writeMicroseconds(MINMS3);
     } else if(curDiffRight > ACCURRACY2){
-       Serial.println("max2");
       myservo.writeMicroseconds(MINMS2);
     } else if(curDiffRight > ACCURRACY1){
-       Serial.println("max3");
       myservo.writeMicroseconds(MINMS1);
     } else{
-      Serial.println("writing stop2");
        myservo.writeMicroseconds(MIDMS);
     }
   }
