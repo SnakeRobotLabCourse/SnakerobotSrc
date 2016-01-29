@@ -20,21 +20,22 @@ int iiX;
 int curDiffRight;
 int curDiffLeft;
 
-int midms = 1518; //stop servo
+#define MIDMS 1535 //stop servo1543 1521
+//1534
 
-#define MAXMS3 2400  //turnservo fast from 360 to 0
-#define MINMS3 600   //turnservo fast from 0 to 360
-#define MAXMS2 1590//turnservo slow from 360 to 0
-#define MINMS2 1476//turnservo slow from 0 to 360
-#define MAXMS1 1556//turnservo very slow from 360 to 0
-#define MINMS1 1495//turnservo very slow from 0 to 360
+#define MAXMS3 (MIDMS+15) //turnservo fast from 360 to 0
+#define MINMS3 (MIDMS-15) //turnservo fast from 0 to 360
+#define MAXMS2 (MIDMS+12) //turnservo slow from 360 to 0
+#define MINMS2 (MIDMS-12)//turnservo slow from 0 to 360
+#define MAXMS1 (MIDMS+10)//turnservo very slow from 360 to 0
+#define MINMS1 (MIDMS-10)//turnservo very slow from 0 to 360
 
 #define ACCURRACY3 600 // -> bigger angle distance then this will turn fast
 #define ACCURRACY2 300 // -> bigger angle distance then this will turn slow
 #define ACCURRACY1 30  // -> bigger angle distance then this will turn very slow
 
 
-int targetAngle = 10;
+int targetAngle = 2000;
 int tempTargetAngle;
 int duration = 500;
 
@@ -63,65 +64,41 @@ void setup() {
   mlx_1.attach(pinSS,pinSCK, pinMOSI ); 
 
   myservo.attach(9);
-  myservo.writeMicroseconds(midms);
+  myservo.writeMicroseconds(MIDMS);
 
   Wire.begin(SLAVEADRESS);
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
+  
 }
 
 void loop() {
-  if(calibrating && !calibratingFinished){
-    calibrate();
-  } else{
-    updateAngle();
+   updateAngle();
+   if(targetAngle > 2700 || targetAngle < 900){
+    Serial.println("writing stopX");
+     myservo.writeMicroseconds(MIDMS);
+     return;
   }
   //TODO: stop servo if angle is out of possible range
-  delay(100);
-}
-
-void calibrate(){
-  ii = mlx_1.readAngle();
-  if(calibratingMax){//calibrate on of the sides
-    if(maxAngle > ii){
-      calibratingDiff = maxAngle -ii;
-    } else{
-       calibratingDiff = ii -maxAngle;
-    }
-    maxAngle = ii;
-    if(calibratingDiff < 1){//if difference to last value is smalle then 1 degree, we assume we found the value
-      calibratingMax = false;//continue with the other
-      myservo.writeMicroseconds(MAXMS2);//switch direction servo
-      ii= -1;
-    } else{
-      myservo.writeMicroseconds(MINMS2);//keep turning
-    }
-  } else{//calibrate the other of the sides
-    if(minAngle > ii){
-      calibratingDiff = minAngle -ii;
-    } else{
-      calibratingDiff = ii -minAngle;
-    }
-      minAngle = ii;
-    
-    //remember last read value
-    if(calibratingDiff < 1){//if difference to last value is smalle then 1 degree, we assume we found the value
-      calibratingMax = true;
-      calibratingFinished = true;//we are done calibrating
-      myservo.writeMicroseconds(midms);//stop servo
-      Serial.print("minangle =");
-      Serial.println(minAngle);
-      Serial.print("maxangle =");
-      Serial.println(maxAngle);
-    } else{
-      myservo.writeMicroseconds(MAXMS2);//keep turning
-    }
-  }
+  delay(50);
 }
 
 void updateAngle(){
+  
+    Serial.println("updateAngle func");
   ii = mlx_1.readAngle();// read the given angle from sensor
-
+  
+   Serial.println(ii);
+   if(ii<0){
+    Serial.println("stopping servo cause angle sensor not working");
+     myservo.writeMicroseconds(MIDMS);
+     return;
+   }
+  if(targetAngle > 2700 || targetAngle < 900){
+    Serial.println("stopping servo");
+     myservo.writeMicroseconds(MIDMS);
+     return;
+  }
 //TODO: return if target angle to big or small
   
   if(ii < targetAngle){ //if the angle is between 0 and the target angle
@@ -138,24 +115,33 @@ void updateAngle(){
   } 
   if(curDiffRight > curDiffLeft){
     if(curDiffLeft > ACCURRACY3){
+      Serial.println("min1");
       myservo.writeMicroseconds(MAXMS1);
     } else if(curDiffLeft > ACCURRACY2){
+      Serial.println("min2");
       myservo.writeMicroseconds(MAXMS1);
     } else if(curDiffLeft > ACCURRACY1){
+      Serial.println("min3");
       myservo.writeMicroseconds(MAXMS1);
     } else{
-       myservo.writeMicroseconds(midms);
+      
+  Serial.println("writing stop1");
+       myservo.writeMicroseconds(MIDMS);
     }
     
   } else {//if(curDiffLeft >= curDiffRight){
     if(curDiffRight > ACCURRACY3){
+       Serial.println("max1");
       myservo.writeMicroseconds(MINMS1);
     } else if(curDiffRight > ACCURRACY2){
+       Serial.println("max2");
       myservo.writeMicroseconds(MINMS1);
     } else if(curDiffRight > ACCURRACY1){
+       Serial.println("max3");
       myservo.writeMicroseconds(MINMS1);
     } else{
-       myservo.writeMicroseconds(midms);
+      Serial.println("writing stop2");
+       myservo.writeMicroseconds(MIDMS);
     }
   }
 }
@@ -186,7 +172,7 @@ void parseMessage(char* message) {
   if(command=='G') { // don't need to read anymore as it's just a get command from master and no more input is expected in this message
     //requestEvent();
   } else if(command=='C'){
-    startCalibrating();
+    //startCalibrating();
     Serial.println("Starting calibration");
   }
   else {
@@ -210,25 +196,12 @@ void parseMessage(char* message) {
   }
 }
 
-//function to begin calibrating the angle sensor
-//while calibrating no other commands can be processed
-void startCalibrating(){
-  calibrating = true;
-  minAngle = 9000;
-  maxAngle = 9000;
-}
-
 //function that executes whenever data is requested by master 
 //this function is registered as an event, see setup()
 void requestEvent() {
   Serial.println("RequestEvent");
-  if(calibrating){
-    sendInt(1800);
-    calibrating = false;
-  } else{
     //respond with message containing angle as expected by master
     sendInt(ii);
-  }
 }
 
 void sendInt(int num){
