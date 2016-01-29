@@ -64,8 +64,9 @@ void setup() {
   mlx_1.attach(pinSS,pinSCK, pinMOSI ); 
 
   myservo.attach(9);
-  myservo.writeMicroseconds(MIDMS);
-
+  // myservo.writeMicroseconds(MIDMS);   
+// I suggest delete this line, because it is possible that we forgot to change the stop point when this program is 
+// uploaded to another module having different stop point.
   Wire.begin(SLAVEADRESS);
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
@@ -74,7 +75,9 @@ void setup() {
 
 void loop() {
    updateAngle();
-   if(targetAngle > 2700 || targetAngle < 900){
+   //if(targetAngle > 2700 || targetAngle < 900){
+   // some module may cannot reach 2700 or 900, for example 800 to 2600 or 1000 to 2800
+   if(targetAngle > 2600 || targetAngle < 1000){
     Serial.println("writing stopX");
      myservo.writeMicroseconds(MIDMS);
      return;
@@ -94,7 +97,8 @@ void updateAngle(){
      myservo.writeMicroseconds(MIDMS);
      return;
    }
-  if(targetAngle > 2700 || targetAngle < 900){
+ // if(targetAngle > 2700 || targetAngle < 900){
+ if(targetAngle > 2600 || targetAngle < 1000){
     Serial.println("stopping servo");
      myservo.writeMicroseconds(MIDMS);
      return;
