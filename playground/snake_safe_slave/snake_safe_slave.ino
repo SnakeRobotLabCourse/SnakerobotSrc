@@ -76,7 +76,11 @@ void setup() {
 void loop() {
    updateAngle();
    //if(targetAngle > 2700 || targetAngle < 900){
-   // some module may cannot reach 2700 or 900, for example 800 to 2600 or 1000 to 2800
+   // some module may cannot reach 2700 or 900, for example 800 to 2600 or 1000 to 2800. 
+   // To fix this problem, I suggest we first find the initial angle of the module, 
+   // then we save it in a variable, 'initAngle', so the range can be represented as
+   // [ initAngle - safeRange, initAngle + safeRange], where the safeRange could be 
+   // 800, or 850...
    if(targetAngle > 2600 || targetAngle < 1000){
     Serial.println("writing stopX");
      myservo.writeMicroseconds(MIDMS);
