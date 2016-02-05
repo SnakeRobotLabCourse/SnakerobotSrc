@@ -1,6 +1,6 @@
-Number	stop(ms)	min-max	startAngle
-1	1521		min max	1789
-2	1543		max-min	1583
-3	1536		max-min	1734
-4	1524		max-min	1837
-5	1523		max-min	1753
+Number	stop(ms)	min-max		startAngle(1/10°)	slave adress
+1	1521		min max		1789			8
+2	1543		max-min		1583			9
+3	1536		max-min		1734			10
+4	1524		max-min		1837			11
+5	1523		max-min		1753			12
