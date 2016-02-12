@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Receive messages from the Master, parse and execute them, and send Ack back to the Master
  */
 
@@ -10,6 +10,10 @@
 bool address_set=false;
 char input[INPUT_SIZE+1];
 int time_to_set_angle=-99;
+int targetAngles[32];
+long targetTimes[32];
+int pointer =0;
+int readPointer=0;
 
 Servo myservo;
 int pinSS = 7;
@@ -20,8 +24,8 @@ int iiX;
 int curDiffRight;
 int curDiffLeft;
 
-#define MIDMS 1536 //stop servo1543 1521
-#define CENTERANGLE 1800 //find for each module
+#define MIDMS 1543 //stop servo1543 1521
+#define CENTERANGLE 1583 //find for each module
 //1534
 
 #define MAXMS3 (MIDMS+100) //turnservo fast from 360 to 0
@@ -36,7 +40,7 @@ int curDiffLeft;
 #define ACCURRACY1 30  // -> bigger angle distance then this will turn very slow
 
 
-int targetAngle = 1800;
+int targetAngle = 1583;
 int tempTargetAngle;
 int duration = 500;
 
@@ -70,11 +74,23 @@ void setup() {
   Wire.begin(SLAVEADRESS);
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
-  myservo.writeMicroseconds(MIDMS);
+  //myservo.writeMicroseconds(MIDMS);
 
 }
 
 void loop() {
+
+    if(targetTimes[readPointer]){
+      int targetTimeX = targetTimes[readPointer];
+      int microsX = millis();
+      if(targetTimeX < microsX){
+        targetAngle = targetAngles[readPointer];
+        readPointer = (readPointer+1)%32;
+      }
+    }
+  
+
+  
    //if(targetAngle > 2700 || targetAngle < 900){
    // some module may cannot reach 2700 or 900, for example 800 to 2600 or 1000 to 2800. 
    // To fix this problem, I suggest we first find the initial angle of the module, 
@@ -101,7 +117,7 @@ void loop() {
 void updateAngle(){
   
     Serial.println("updateAngle func");
-  ii = mlx_1.readAngle();// read the given angle from sensor
+    ii = mlx_1.readAngle();// read the given angle from sensor
   
    Serial.println(ii);
    if(ii<0){
@@ -130,9 +146,9 @@ void updateAngle(){
   } 
   if(curDiffRight > curDiffLeft){
     if(curDiffLeft > ACCURRACY3){
-      myservo.writeMicroseconds(MAXMS3);
+      myservo.writeMicroseconds(MAXMS1);
     } else if(curDiffLeft > ACCURRACY2){
-      myservo.writeMicroseconds(MAXMS2);
+      myservo.writeMicroseconds(MAXMS1);
     } else if(curDiffLeft > ACCURRACY1){
       myservo.writeMicroseconds(MAXMS1);
     } else{
@@ -142,9 +158,9 @@ void updateAngle(){
     
   } else {//if(curDiffLeft >= curDiffRight){
     if(curDiffRight > ACCURRACY3){
-      myservo.writeMicroseconds(MINMS3);
+      myservo.writeMicroseconds(MINMS1);
     } else if(curDiffRight > ACCURRACY2){
-      myservo.writeMicroseconds(MINMS2);
+      myservo.writeMicroseconds(MINMS1);
     } else if(curDiffRight > ACCURRACY1){
       myservo.writeMicroseconds(MINMS1);
     } else{
@@ -233,18 +249,19 @@ void parseMessage(char* message) {
     while(token != NULL) {
       token = strtok(NULL, ":");
       if(i==0) {
-        targetAngle=atoi(token);
+        targetAngles[pointer]=atoi(token);
         i++;
       }
       else if(i==1) {
-        time_to_set_angle=atoi(token);
+        targetTimes[pointer]=atoi(token)+millis();
         break;
       }
     }
     Serial.print("Angle to set to-");Serial.println(targetAngle);
     Serial.print("Time (in ms) in which to set the Angle to-");Serial.println(time_to_set_angle);
 
-    // SET THE SERVO ANGLE HERE AND SEND AN ACK TO THE MASTER
+    //increase pointer value by one
+    pointer = (pointer+1)%32;
     
   }
 }
