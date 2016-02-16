@@ -10,14 +10,17 @@ void setup() {
   Wire.begin(); //join i2c bus, no address as I'm master
   Serial.begin(9600);  //start serial for giving input
   //inputString.reserve(200); //reserve 200 bytes for inputString
-
+delay(1000);
 Serial.println ("I2C scanner. Scanning ...");
  byte count = 0;
- 
+ unsigned long startTime;
  Wire.begin();
  for (byte i = 1; i < 120; i++)
  {
    Wire.beginTransmission (i);
+   Serial.print ("current i: ");
+   Serial.println (i, DEC);
+   startTime = millis();
    if (Wire.endTransmission () == 0)
      {
      Serial.print ("Found address: ");

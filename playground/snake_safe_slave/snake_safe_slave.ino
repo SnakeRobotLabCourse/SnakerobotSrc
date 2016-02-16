@@ -5,112 +5,93 @@
 #include <Wire.h>
 #include <MLX90316.h>
 #include<Servo.h>
-#define INPUT_SIZE 2
+
+/* module depended parameters */
 #define SLAVEADRESS 9
-bool address_set=false;
-char input[INPUT_SIZE+1];
-int time_to_set_angle=-99;
-int targetAngles[32];
-long targetTimes[32];
-int pointer =0;
-int readPointer=0;
+#define MIDMS 1543                                            // stop servo1543 1521
+#define CENTERANGLE 1583                                      // find for each module
+
+/* parameters, array size*/
+#define ANGLERESOLUTION 10                                    // resolution of updating angle
+#define SAFEANGLERANGE 850                                    // max safe angle offset from center angle 
+#define COMMANDARRAYSIZE 32                                   // the size of array storing recent commands
+#define MESSAGEBUFFERSIZE 20                                  // the size of the temp array storing recieved command
+
+
+int time_to_set_angle=-99;                                    // used for time-aware turing, currently not support
+int targetAngles[COMMANDARRAYSIZE];                           // array storing recent commands
+unsigned long targetTimes[COMMANDARRAYSIZE];                  // array storing recent commands
+int writepointer =0;                                          // pointer used to write command
+int readPointer=0;                                            // pointer used to read command
+
+
+const int DEFAULTSPEEDLEFT = MIDMS - 100;                     // default turning left speed 
+const int DEFAULTSPEEDRIGHT = MIDMS + 100;                    // default turning right speed 
+
+const int safeAngleMax = CENTERANGLE + SAFEANGLERANGE;        // the max angle in safe range
+const int safeAngleMin = CENTERANGLE - SAFEANGLERANGE;        // the min angle in safe range
+int targetAngle = CENTERANGLE;                                // initialize the module to center position
+
+unsigned long microsX;                                        // used for time-aware turing, currently not support 
+unsigned long targetTimeX;                                    // used for time-aware turing, currently not support
 
 Servo myservo;
+
+/* define pins for angle sensor, and variable to store read angle*/
 int pinSS = 7;
 int pinSCK = 10;
 int pinMOSI = 8;
 int ii;
-int iiX;
-int curDiffRight;
-int curDiffLeft;
-
-#define MIDMS 1543                                            //stop servo1543 1521
-#define CENTERANGLE 1583                                      //find for each module
-//1534
-
-#define MAXMS3 (MIDMS+100)                                    //turnservo fast from 360 to 0
-#define MINMS3 (MIDMS-100)                                    //turnservo fast from 0 to 360
-#define MAXMS2 (MIDMS+30)                                     //turnservo slow from 360 to 0
-#define MINMS2 (MIDMS-30)                                     //turnservo slow from 0 to 360
-#define MAXMS1 (MIDMS+10)//turnservo very slow from 360 to 0
-#define MINMS1 (MIDMS-10)//turnservo very slow from 0 to 360
-
-#define ACCURRACY3 500 // -> bigger angle distance then this will turn fast
-#define ACCURRACY2 100 // -> bigger angle distance then this will turn slow
-#define ACCURRACY1 30  // -> bigger angle distance then this will turn very slow
-
-byte DEFAULTSPEED = 100;
-
-
-int targetAngle = 1583;
-int tempTargetAngle;
-int duration = 500;
-
-int calibratingDiff;
-int minAngle = 9000; //use when calibrating later
-int maxAngle = 9000; //use when calibrating later
-boolean calibratingMax = true;
-boolean calibrating = false;
-boolean calibratingFinished = false;
-boolean calibratingDiffOnceBigger = false;
-
-int byteSending = 1;
-int toTransfer = 32766;
-int Shift = toTransfer;
-int mask = 0xFF;
-char toSend = 0;
-
-boolean lastMessage = false;
-
-
-unsigned long microsX;
-unsigned long targetTimeX;
-
 MLX90316 mlx_1  = MLX90316(); 
-void setup() {
-                                         
-  mlx_1.attach(pinSS,pinSCK, pinMOSI );                         // angle sensor
 
-  myservo.attach(9);                                            // servo attached    
+
+
+void setup() {
+    Serial.begin(9600);
+
+
+                                         
+    mlx_1.attach(pinSS,pinSCK, pinMOSI );                       // angle sensor
+
+    myservo.attach(9);                                          // servo attached    
                           
-  Wire.begin(SLAVEADRESS);                                      // join I2C bus
-  Wire.onReceive(receiveEvent);
-  Wire.onRequest(requestEvent);
+    Wire.begin(SLAVEADRESS);                                    // join I2C bus
+    Wire.onReceive(receiveEvent);
+    Wire.onRequest(requestEvent);
 
 }
 
 void loop() {
 
     if(targetTimes[readPointer]){
-      targetTimeX = targetTimes[readPointer];
-      microsX = millis();
-      if(targetTimeX < microsX){
-        targetAngle = targetAngles[readPointer];
-        readPointer = (readPointer+1)%32;
-      }
+        targetTimeX = targetTimes[readPointer];
+        microsX = millis();
+        if(targetTimeX < microsX){
+            targetAngle = targetAngles[readPointer];
+            readPointer = (readPointer + 1) % COMMANDARRAYSIZE;
+        }
     }
  
    
 
     updateAngle(targetAngle);
-  
-  delay(50);
 }
 
+
 void updateAngle(int tArgetAngle){ 
-    if(tArgetAngle > CENTERANGLE+850 || tArgetAngle < CENTERANGLE-850){
-     myservo.writeMicroseconds(MIDMS);
-     return;
-  }
   
-   ii = mlx_1.readAngle();// read the given angle from sensor
+    if(tArgetAngle > safeAngleMax || tArgetAngle < safeAngleMin){
+
+        return;
+    }
   
-   if(ii > CENTERANGLE+850 || ii < CENTERANGLE-850){
-     myservo.writeMicroseconds(MIDMS);  // TODO: the servo is better detached here
-     return;
-   }
-   boolean turningDirection = (ii < tArgetAngle) ? false : true;
-   myservo.writeMicroseconds(MIDMS + turningDirection|DEFAULTSPEED - (!turningDirection)|DEFAULTSPEED);
+    ii = mlx_1.readAngle();                                       // read the given angle from sensor
+  
+    if(ii > safeAngleMax || ii < safeAngleMin  || abs(ii - tArgetAngle) < ANGLERESOLUTION){
+       // TODO: it is better to detach the servo here
+        return;
+    }
+    myservo.writeMicroseconds(  (  (ii < tArgetAngle) ? DEFAULTSPEEDLEFT : DEFAULTSPEEDRIGHT ) );
    
 }
 
@@ -120,77 +101,61 @@ void updateAngle(int tArgetAngle){
 //callback which is called, when the slave receives a receive event from the master
 //(master sends a command to slave, e.g. new servo angle or speed)
 void receiveEvent(int howMany) {
-  Serial.println("Receive Event");
-  char message[12];
-  byte i = 0;
-  while (0 < Wire.available() && i < 12) {  // loop through all
-    char c = Wire.read();         // receive byte as a character  
-     message[i] = c;
-     i++;
-    Serial.print(c);
-  }
-  Serial.println();
-  parseMessage(message);
+    Serial.println("Receive Event");
+    char message[MESSAGEBUFFERSIZE];
+    byte i = 0;
+    while (0 < Wire.available() && i < MESSAGEBUFFERSIZE) {         // loop through all
+        char c = Wire.read();                                       // receive byte as a character  
+        message[i] = c;
+        i++;
+        Serial.print(c);
+    }
+    Serial.println();
+    parseMessage(message);
  }
 
 void parseMessage(char* message) {
-  Serial.println(message);
-  // read each part of the message
-  char* token=strtok(message, ":");
-  char command=*token;
-  Serial.print("Command Char-");Serial.println(command);
-  // if command is 'S'
-  if(command=='G') { // don't need to read anymore as it's just a get command from master and no more input is expected in this message
-    //requestEvent();
-  } else if(command=='C'){
-    startCalibrating();
-    Serial.println("Starting calibration");
-  }
-  else {
-    int i=0;
-    while(token != NULL) {
-      token = strtok(NULL, ":");
-      if(i==0) {
-        targetAngles[pointer]=atoi(token);
-        i++;
-      }
-      else if(i==1) {
-        targetTimes[pointer]=atoi(token)+millis();
-        break;
-      }
-    }
-    Serial.print("Angle to set to-");Serial.println(targetAngle);
-    Serial.print("Time (in ms) in which to set the Angle to-");Serial.println(time_to_set_angle);
+    Serial.println(message);
+                                                                      // read each part of the message
+    char* token=strtok(message, ":");
+    char command=*token;
+    Serial.print("Command Char-");Serial.println(command);
 
-    //increase pointer value by one
-    pointer = (pointer+1)%32;
+    switch (command) {
+        case 'S':
+            token = strtok(NULL, ":");
+            targetAngles[writepointer]=atoi(token);
+            token = strtok(NULL, ":");
+            if (token != NULL){
+                targetTimes[writepointer]=atoi(token)+millis(); 
+            }
+            Serial.print("Angle to set to-");Serial.println(targetAngles[writepointer]);
+            Serial.print("Time (in ms) in which to set the Angle to-");Serial.println(time_to_set_angle);
+
+            
+            writepointer = ( writepointer + 1 ) % COMMANDARRAYSIZE;   //increase pointer value by one
     
+            break;
+        default:
+            Serial.println("Not support, skip...");
+            break;   
   }
 }
 
-//function to begin calibrating the angle sensor
-//while calibrating no other commands can be processed
-void startCalibrating(){
-  calibrating = true;
-  minAngle = 9000;
-  maxAngle = 9000;
-}
+
 
 //function that executes whenever data is requested by master 
 //this function is registered as an event, see setup()
 void requestEvent() {
-  Serial.println("RequestEvent");
-  if(calibrating){
-    sendInt(1800);
-    calibrating = false;
-  } else{
+    Serial.println("RequestEvent");
+
     //respond with message containing angle as expected by master
     sendInt(ii);
-  }
+ 
 }
 
 void sendInt(int num){
-  Wire.write((byte *)&num, sizeof(unsigned int));
+    Wire.write((byte *)&num, sizeof(unsigned int));
 }
 
 
@@ -198,7 +163,13 @@ void sendInt(int num){
 
 
 
-
+////function to begin calibrating the angle sensor
+////while calibrating no other commands can be processed
+//  void startCalibrating(){
+//    calibrating = true;
+//    minAngle = 9000;
+//    maxAngle = 9000;
+//  }
 
 //void calibrate(){
 //  ii = mlx_1.readAngle();
