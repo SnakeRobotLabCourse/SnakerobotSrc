@@ -12,21 +12,23 @@
 #define CENTERANGLE 1583                                      // find for each module
 
 /* parameters, array size*/
-#define ANGLERESOLUTION 10                                    // resolution of updating angle
+#define ANGLERESOLUTION 5                                     // resolution of updating angle
 #define SAFEANGLERANGE 850                                    // max safe angle offset from center angle 
 #define COMMANDARRAYSIZE 32                                   // the size of array storing recent commands
 #define MESSAGEBUFFERSIZE 20                                  // the size of the temp array storing recieved command
+#define PCONTTROLVALIDRANGE 400
+#define SERVOSPEEDRANGE 40
 
-
-int time_to_set_angle=-99;                                    // used for time-aware turing, currently not support
+boolean isDetached = false;
+//int time_to_set_angle=-99;                                    // used for time-aware turing, currently not support
 int targetAngles[COMMANDARRAYSIZE];                           // array storing recent commands
 unsigned long targetTimes[COMMANDARRAYSIZE];                  // array storing recent commands
 int writepointer =0;                                          // pointer used to write command
 int readPointer=0;                                            // pointer used to read command
 
 
-const int DEFAULTSPEEDLEFT = MIDMS - 20;                     // default turning left speed 
-const int DEFAULTSPEEDRIGHT = MIDMS + 20;                    // default turning right speed 
+const int DEFAULTSPEEDLEFT = MIDMS - SERVOSPEEDRANGE;         // default turning left speed 
+const int DEFAULTSPEEDRIGHT = MIDMS + SERVOSPEEDRANGE;        // default turning right speed 
 
 const int safeAngleMax = CENTERANGLE + SAFEANGLERANGE;        // the max angle in safe range
 const int safeAngleMin = CENTERANGLE - SAFEANGLERANGE;        // the min angle in safe range
@@ -35,22 +37,23 @@ int targetAngle = CENTERANGLE;                                // initialize the 
 unsigned long microsX;                                        // used for time-aware turing, currently not support 
 unsigned long targetTimeX;                                    // used for time-aware turing, currently not support
 
+unsigned long previousTime;
+
+
 Servo myservo;
 
 /* define pins for angle sensor, and variable to store read angle*/
-int pinSS = 7;
-int pinSCK = 10;
-int pinMOSI = 8;
-int ii;
+const byte pinSS = 7;
+const byte pinSCK = 10;
+const byte pinMOSI = 8;
+int angleRead;
 MLX90316 mlx_1  = MLX90316(); 
 
 
 
 void setup() {
     Serial.begin(9600);
-
-
-                                         
+                        
     mlx_1.attach(pinSS,pinSCK, pinMOSI );                       // angle sensor
 
     myservo.attach(9);                                          // servo attached    
@@ -59,23 +62,48 @@ void setup() {
     Wire.onReceive(receiveEvent);
     Wire.onRequest(requestEvent);
 
+    previousTime = millis();
+
 }
 
 void loop() {
 
-    if(targetAngles[readPointer] > 0){
-        targetTimeX = targetTimes[readPointer];
-        microsX = millis();
-        if(targetTimeX < microsX){
-          Serial.println("Update command!");
-            targetAngle = targetAngles[readPointer];
-            readPointer = (readPointer + 1) % COMMANDARRAYSIZE;
-        }
-    }
- 
-   
+    if( millis() > previousTime + 10){
+    
+      if(targetAngles[readPointer] > 0){
+          targetTimeX = targetTimes[readPointer];
+          microsX = millis();
+          if(targetTimeX < microsX){
+              Serial.println("Update command!");
+              targetAngle = targetAngles[readPointer];
+              readPointer = (readPointer + 1) % COMMANDARRAYSIZE;
+          }
+      }
 
-    updateAngle(targetAngle);
+
+      angleRead = mlx_1.readAngle();                                       // read the given angle from sensor
+      Serial.println(angleRead);
+    
+      if(angleRead > safeAngleMax || angleRead < safeAngleMin){
+          myservo.detach();                                               // For safety, it is better to detach the servo here
+          isDetached = true;
+          targetAngle = CENTERANGLE;
+      }
+      else{
+          if ( isDetached ){
+              myservo.attach(9);
+              isDetached = false;
+          }
+          updateAngle(targetAngle);
+      }
+
+
+
+
+      previousTime = millis();
+    
+  }
+    
 }
 
 
@@ -86,16 +114,20 @@ void updateAngle(int tArgetAngle){
         return;
     }
   
-    ii = mlx_1.readAngle();                                       // read the given angle from sensor
-    Serial.println(ii);
-    delay(200);
-  
-    if(ii > safeAngleMax || ii < safeAngleMin  || abs(ii - tArgetAngle) < ANGLERESOLUTION){
-       // TODO: it is better to detach the servo here
+
+    if( abs(angleRead - tArgetAngle) < ANGLERESOLUTION){
         return;
     }
-    myservo.writeMicroseconds(  (  (ii < tArgetAngle) ? DEFAULTSPEEDLEFT : DEFAULTSPEEDRIGHT ) );
-   
+    
+    int error = angleRead - tArgetAngle;
+    if ( abs(error) > PCONTTROLVALIDRANGE ){
+        myservo.writeMicroseconds(  (  (angleRead < tArgetAngle) ? DEFAULTSPEEDLEFT : DEFAULTSPEEDRIGHT ) );
+    }
+    else{
+        int order = map(error, -PCONTTROLVALIDRANGE, PCONTTROLVALIDRANGE, -SERVOSPEEDRANGE, SERVOSPEEDRANGE ) + MIDMS;
+        myservo.writeMicroseconds(order);
+    }
+    
 }
 
 
@@ -133,14 +165,14 @@ void parseMessage(char* message) {
                 targetTimes[writepointer]=atoi(token)+millis(); 
             }
             Serial.print("Angle to set to-");Serial.println(targetAngles[writepointer]);
-            Serial.print("Time (in ms) in which to set the Angle to-");Serial.println(time_to_set_angle);
+//            Serial.print("Time (in ms) in which to set the Angle to-");Serial.println(time_to_set_angle);
 
             
             writepointer = ( writepointer + 1 ) % COMMANDARRAYSIZE;   //increase pointer value by one
     
             break;
         default:
-            Serial.println("Not support, skip...");
+            Serial.println("Not support, skipping...");
             break;   
   }
 }
@@ -153,7 +185,7 @@ void requestEvent() {
     Serial.println("RequestEvent");
 
     //respond with message containing angle as expected by master
-    sendInt(ii);
+    sendInt(angleRead);
  
 }
 
