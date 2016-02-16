@@ -145,7 +145,7 @@ void loop(void)
                   char * values[MAX_COMMAND_NUMBER];
                   splitString(tempCommand, ":",values);
                   byte valuesNumber = 0;   // indicates how many parts the current command can be splitted to by :
-                  while ( commands[valuesNumber] != NULL )
+                  while ( values[valuesNumber] != NULL )
                   {
                     valuesNumber++; 
                   }
