@@ -7,17 +7,17 @@
 #include<Servo.h>
 
 /* module depended parameters */
-#define SLAVEADRESS 9
-#define MIDMS 1523                                            // stop servo1543 1521
-#define CENTERANGLE 1583                                      // find for each module
+#define SLAVEADRESS 4
+#define MIDMS 1534                                            // stop servo1543 1521
+#define CENTERANGLE 1883                                      // find for each module
 
 /* parameters, array size*/
-#define ANGLERESOLUTION 5                                     // resolution of updating angle
+#define ANGLERESOLUTION 2                                     // resolution of updating angle
 #define SAFEANGLERANGE 850                                    // max safe angle offset from center angle 
 #define COMMANDARRAYSIZE 32                                   // the size of array storing recent commands
 #define MESSAGEBUFFERSIZE 20                                  // the size of the temp array storing recieved command
 #define PCONTTROLVALIDRANGE 200
-#define SERVOSPEEDRANGE 60
+#define SERVOSPEEDRANGE 100
 
 boolean isDetached = false;
 //int time_to_set_angle=-99;                                    // used for time-aware turing, currently not support
@@ -84,20 +84,20 @@ void loop() {
       angleRead = mlx_1.readAngle();                                       // read the given angle from sensor
       Serial.println(angleRead);
     
-      if(angleRead > safeAngleMax || angleRead < safeAngleMin){
-          myservo.detach();                                               // For safety, it is better to detach the servo here
-          isDetached = true;
+      if(angleRead > safeAngleMax + 100 || angleRead < safeAngleMin - 100){
+   //       myservo.detach();                                               // For safety, it is better to detach the servo here
+   //       isDetached = true;
           targetAngle = CENTERANGLE;
       }
       else{
           if ( isDetached ){
-              myservo.attach(9);
+              //myservo.attach(9);
               isDetached = false;
           }
-          updateAngle(targetAngle);
+          
       }
 
-
+updateAngle(targetAngle);
 
 
       previousTime = millis();
@@ -126,14 +126,14 @@ void updateAngle(int tArgetAngle){
     }
     else{
         int order = map(error, -PCONTTROLVALIDRANGE, PCONTTROLVALIDRANGE, -SERVOSPEEDRANGE, SERVOSPEEDRANGE ) ;
-        if (order>0)
-        {
-          order = max(order, 7);
-        }
-        else
-        {
-          order = min(order, -7);
-        }
+//        if (order>0)
+//        {
+//          order = max(order, 5);
+//        }
+//        else
+//        {
+//          order = min(order, -5);
+//        }
         order = order + MIDMS;
         myservo.writeMicroseconds(order);
     }
@@ -146,20 +146,36 @@ void updateAngle(int tArgetAngle){
 //callback which is called, when the slave receives a receive event from the master
 //(master sends a command to slave, e.g. new servo angle or speed)
 void receiveEvent(int howMany) {
+  if (howMany == 2)
+  {
     Serial.println("Receive Event");
-    char message[MESSAGEBUFFERSIZE];
-    byte i = 0;
-    while (0 < Wire.available() && i < MESSAGEBUFFERSIZE) {         // loop through all
-        char c = Wire.read();                                       // receive byte as a character  
-        message[i] = c;
-        i++;
-        Serial.print(c);
-    }
-    Serial.println();
-    parseMessage(message);
+//    char message[MESSAGEBUFFERSIZE];
+//    byte i = 0;
+//    while (0 < Wire.available() && i < MESSAGEBUFFERSIZE) {         // loop through all
+//        char c = Wire.read();                                       // receive byte as a character  
+//        message[i] = c;
+//        i++;
+//        Serial.print(c);
+//    }
+//    Serial.println();
+   
+    targetAngle = Wire.read() << 8;
+    targetAngle |= Wire.read();
+    Serial.print("Angle to set to-");Serial.println(targetAngle);
+ //   parseMessage(message);
+ }
+ else
+ {
+  
  }
 
+
+}
+
+
+
 void parseMessage(char* message) {
+   
     Serial.println(message);
                                                                       // read each part of the message
     char* token=strtok(message, ":");
@@ -169,7 +185,7 @@ void parseMessage(char* message) {
     switch (command) {
         case 'S':
             token = strtok(NULL, ":");
-//            targetAngles[writepointer]=atoi(token);
+            targetAngles[writepointer]=atoi(token);
             targetAngle = atoi(token);
             token = strtok(NULL, ":");
             if (token != NULL){
