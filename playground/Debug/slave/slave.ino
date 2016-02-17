@@ -70,15 +70,15 @@ void loop() {
 
     if( millis() > previousTime + 100){
     
-      if(targetAngles[readPointer] > 0){
-          targetTimeX = targetTimes[readPointer];
-          microsX = millis();
-          if(targetTimeX < microsX){
-              Serial.println("Update command!");
-              targetAngle = targetAngles[readPointer];
-              readPointer = (readPointer + 1) % COMMANDARRAYSIZE;
-          }
-      }
+//      if(targetAngles[readPointer] > 0){
+//          targetTimeX = targetTimes[readPointer];
+//          microsX = millis();
+//          if(targetTimeX < microsX){
+//              Serial.println("Update command!");
+//              targetAngle = targetAngles[readPointer];
+//              readPointer = (readPointer + 1) % COMMANDARRAYSIZE;
+//          }
+//      }
 
 
       angleRead = mlx_1.readAngle();                                       // read the given angle from sensor
@@ -125,7 +125,16 @@ void updateAngle(int tArgetAngle){
         myservo.writeMicroseconds(  (  (angleRead < tArgetAngle) ? DEFAULTSPEEDLEFT : DEFAULTSPEEDRIGHT ) );
     }
     else{
-        int order = map(error, -PCONTTROLVALIDRANGE, PCONTTROLVALIDRANGE, -SERVOSPEEDRANGE, SERVOSPEEDRANGE ) + MIDMS;
+        int order = map(error, -PCONTTROLVALIDRANGE, PCONTTROLVALIDRANGE, -SERVOSPEEDRANGE, SERVOSPEEDRANGE ) ;
+        if (order>0)
+        {
+          order = max(order, 7);
+        }
+        else
+        {
+          order = min(order, -7);
+        }
+        order = order + MIDMS;
         myservo.writeMicroseconds(order);
     }
     
@@ -160,7 +169,8 @@ void parseMessage(char* message) {
     switch (command) {
         case 'S':
             token = strtok(NULL, ":");
-            targetAngles[writepointer]=atoi(token);
+//            targetAngles[writepointer]=atoi(token);
+            targetAngle = atoi(token);
             token = strtok(NULL, ":");
             if (token != NULL){
                 targetTimes[writepointer]=atoi(token)+millis(); 
