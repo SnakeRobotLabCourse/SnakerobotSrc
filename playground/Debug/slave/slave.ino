@@ -16,8 +16,8 @@
 #define SAFEANGLERANGE 850                                    // max safe angle offset from center angle 
 #define COMMANDARRAYSIZE 32                                   // the size of array storing recent commands
 #define MESSAGEBUFFERSIZE 20                                  // the size of the temp array storing recieved command
-#define PCONTTROLVALIDRANGE 400
-#define SERVOSPEEDRANGE 40
+#define PCONTTROLVALIDRANGE 200
+#define SERVOSPEEDRANGE 60
 
 boolean isDetached = false;
 //int time_to_set_angle=-99;                                    // used for time-aware turing, currently not support
@@ -68,7 +68,7 @@ void setup() {
 
 void loop() {
 
-    if( millis() > previousTime + 10){
+    if( millis() > previousTime + 100){
     
       if(targetAngles[readPointer] > 0){
           targetTimeX = targetTimes[readPointer];
@@ -120,6 +120,7 @@ void updateAngle(int tArgetAngle){
     }
     
     int error = angleRead - tArgetAngle;
+    
     if ( abs(error) > PCONTTROLVALIDRANGE ){
         myservo.writeMicroseconds(  (  (angleRead < tArgetAngle) ? DEFAULTSPEEDLEFT : DEFAULTSPEEDRIGHT ) );
     }
