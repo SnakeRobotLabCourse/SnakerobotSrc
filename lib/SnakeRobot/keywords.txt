@@ -1,0 +1,52 @@
+#######################################
+# Syntax Coloring Map For SnakeRobot
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+SlaveModule	KEYWORD1
+Master 		KEYWORD1
+SnakeRobot	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+run				KEYWORD2
+init				KEYWORD2
+readAngle  			KEYWORD2
+stopServo			KEYWORD2
+
+getpayload			KEYWORD2
+RF24send 			KEYWORD2
+RF24receive 			KEYWORD2
+isDone				KEYWORD2
+forwardToSlaves 		KEYWORD2
+collectFromSlaves		KEYWORD2
+forwardChar			KEYWORD2
+getCollectedMessage  		KEYWORD2
+getReceivedMessage		KEYWORD2
+clearMessageToSendBuffer  	KEYWORD2
+clearReceivedMessageBuffer  	KEYWORD2
+
+
+sendInt 			KEYWORD2
+receiveInt			KEYWORD2
+isExist 			KEYWORD2
+splitString			KEYWORD2
+scanSlaves			KEYWORD2
+masterForwardCommands		KEYWORD2
+sendingCommands			KEYWORD2
+
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+_stopPoint	LITERAL1
+_centerAngle	LITERAL1
