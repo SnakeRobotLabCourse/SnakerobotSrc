@@ -1,10 +1,10 @@
-/*
-		SnakeRobot.h ---- library to control the snake robot built 
-		in Informatik 6, TUM, including I2C communication from PC to 
-		the robot, controlling the servo, etc.
-		Created by Long Cheng, 17/02/2016, Garching.
-		
-*/
+/************************************************************************
+*		SnakeRobot.h ---- library to control the snake robot built 		*
+*		in Informatik 6, TUM, including I2C communication from PC to 	*	
+*		the robot, controlling the servo, etc.							*
+*		Created by Long Cheng, 17/02/2016, Garching.					*
+*																		*
+************************************************************************/
 
 #ifndef SNAKEROBOT_H
 #define SNAKEROBOT_H
